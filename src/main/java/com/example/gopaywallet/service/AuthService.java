@@ -2,6 +2,7 @@ package com.example.gopaywallet.service;
 
 
 import com.example.gopaywallet.exception.AuthenticationException;
+import com.example.gopaywallet.exception.InvalidOtpException;
 import com.example.gopaywallet.exception.ResourceNotFoundException;
 import com.example.gopaywallet.exception.UserAlreadyExistsException;
 import com.example.gopaywallet.model.*;
@@ -123,18 +124,23 @@ public class AuthService {
         }
     }
 
-    public ResetPasswordResponse resetPassword(ResetPasswordRequest request) {
-        if (!passwordResetService.validatePasswordResetToken(request.getToken())) {
-            throw new AuthenticationException("Invalid or expired token");
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        // First verify OTP
+        if (!otpService.validateOtp(request.getEmail(), request.getOtp())) {
+            throw new InvalidOtpException("Invalid or expired OTP");
         }
 
-        User user = passwordResetService.getUserByPasswordResetToken(request.getToken());
+        // If OTP is valid, proceed with password reset
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
-        passwordResetService.invalidateToken(request.getToken());
-
-        return new ResetPasswordResponse("Password successfully reset", true);
+        otpService.removeOtpDataForUser(request.getEmail());
     }
+
+
 
     public void changePassword(String email, ChangePasswordRequest request) {
         User user = userRepository.findByEmail(email)

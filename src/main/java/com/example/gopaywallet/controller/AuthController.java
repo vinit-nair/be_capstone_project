@@ -1,10 +1,9 @@
 package com.example.gopaywallet.controller;
 
-import com.example.gopaywallet.exception.AuthenticationException;
-import com.example.gopaywallet.exception.ResourceNotFoundException;
-import com.example.gopaywallet.exception.UserAlreadyExistsException;
+import com.example.gopaywallet.exception.*;
 import com.example.gopaywallet.model.*;
 import com.example.gopaywallet.service.AuthService;
+import com.example.gopaywallet.service.OtpService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,6 +23,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @RequiredArgsConstructor
 public class AuthController {
     private final AuthService authService;
+    private final OtpService otpService;
 
     @Operation(
             summary = "User registration",
@@ -86,11 +86,11 @@ public class AuthController {
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
         try {
-            return ResponseEntity.ok(authService.resetPassword(request));
-        } catch (AuthenticationException e) {
-            return ResponseEntity
-                    .badRequest()
-                    .body(new ResetPasswordResponse(e.getMessage(), false));
+            authService.resetPassword(request);
+            return ResponseEntity.ok(new com.example.gopaywallet.model.ApiResponse(true, "Password reset successful"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest()
+                    .body(new com.example.gopaywallet.model.ApiResponse(false, e.getMessage()));
         }
     }
 
@@ -119,6 +119,23 @@ public class AuthController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new com.example.gopaywallet.model.ApiResponse(false, "Failed to process request"));
+        }
+    }
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<?> verifyOtp(@RequestBody VerifyOtpRequest request) {
+        try {
+            otpService.validateOtp(request.getEmail(), request.getOtp());
+            return ResponseEntity.ok(new com.example.gopaywallet.model.ApiResponse(true, "OTP verified successfully"));
+        } catch (InvalidOtpException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new com.example.gopaywallet.model.ApiResponse(false, "Invalid OTP"));
+        } catch (OtpExpiredException e) {
+            return ResponseEntity.status(HttpStatus.GONE)
+                    .body(new com.example.gopaywallet.model.ApiResponse(false, "OTP has expired"));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new com.example.gopaywallet.model.ApiResponse(false, "Failed to verify OTP"));
         }
     }
 } 
