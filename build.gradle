@@ -52,6 +52,12 @@ dependencies {
 
 	// Email
 	implementation 'org.springframework.boot:spring-boot-starter-mail'
+
+	// Swagger UI and OpenAPI Documentation
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.1.0'
+
+	// Validation
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
 }
 
 tasks.named('test') {

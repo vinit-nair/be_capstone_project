@@ -1,80 +1,72 @@
 package com.example.gopaywallet.service;
 
-
-import com.example.gopaywallet.model.PasswordResetToken;
 import com.example.gopaywallet.model.User;
-import com.example.gopaywallet.repository.PasswordResetTokenRepository;
 import com.example.gopaywallet.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
 public class PasswordResetService {
     private final UserRepository userRepository;
-    private final PasswordResetTokenRepository tokenRepository;
     private final EmailService emailService;
+    private final Map<String, PasswordResetToken> tokenStore = new HashMap<>();
 
-    @Transactional
+    @Autowired
+    public PasswordResetService(UserRepository userRepository, EmailService emailService) {
+        this.userRepository = userRepository;
+        this.emailService = emailService;
+    }
+
     public String createPasswordResetTokenForUser(User user) {
-        // Delete any existing tokens for this user
-        tokenRepository.deleteByUser_Id(user.getId());
-
         String token = UUID.randomUUID().toString();
-        PasswordResetToken passwordResetToken = new PasswordResetToken();
-        passwordResetToken.setUser(user);
-        passwordResetToken.setToken(token);
-        passwordResetToken.setExpiryDate(LocalDateTime.now().plusHours(24));
-        tokenRepository.save(passwordResetToken);
-
+        PasswordResetToken passwordResetToken = new PasswordResetToken(
+                token,
+                user.getEmail(),
+                LocalDateTime.now().plusMinutes(30)
+        );
+        tokenStore.put(token, passwordResetToken);
         return token;
     }
 
-    public void sendPasswordResetEmail(User user, String token) {
-        String resetUrl = "your-app-url/reset-password?token=" + token;
-        String htmlMessage = String.format("""
-            <html>
-                <body>
-                    <h2>Password Reset Request</h2>
-                    <p>Hello %s,</p>
-                    <p>You have requested to reset your password. Click the link below to proceed:</p>
-                    <p><a href="%s">Reset Password</a></p>
-                    <p>This link will expire in 24 hours.</p>
-                    <p>If you didn't request this, please ignore this email.</p>
-                    <br>
-                    <p>Best regards,</p>
-                    <p>GoPay Wallet Team</p>
-                </body>
-            </html>
-            """, user.getFullName(), resetUrl);
-        
-        emailService.sendEmail(user.getEmail(), "Password Reset Request", htmlMessage);
-    }
-
-    @Transactional(readOnly = true)
     public boolean validatePasswordResetToken(String token) {
-        return tokenRepository.findByToken(token)
-            .map(resetToken -> !resetToken.isExpired() && !resetToken.isUsed())
-            .orElse(false);
+        PasswordResetToken resetToken = tokenStore.get(token);
+        return resetToken != null && !resetToken.isExpired();
     }
 
-    @Transactional
     public User getUserByPasswordResetToken(String token) {
-        return tokenRepository.findByToken(token)
-            .map(PasswordResetToken::getUser)
-            .orElseThrow(() -> new RuntimeException("Invalid token"));
+        PasswordResetToken resetToken = tokenStore.get(token);
+        if (resetToken == null || resetToken.isExpired()) {
+            throw new RuntimeException("Invalid or expired token");
+        }
+        return userRepository.findByEmail(resetToken.getUserEmail())
+                .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
-    @Transactional
     public void invalidateToken(String token) {
-        tokenRepository.findByToken(token)
-            .ifPresent(resetToken -> {
-                resetToken.setUsed(true);
-                tokenRepository.save(resetToken);
-            });
+        tokenStore.remove(token);
     }
-} 
+
+    private static class PasswordResetToken {
+        private final String token;
+        private final String userEmail;
+        private final LocalDateTime expiryDate;
+
+        public PasswordResetToken(String token, String userEmail, LocalDateTime expiryDate) {
+            this.token = token;
+            this.userEmail = userEmail;
+            this.expiryDate = expiryDate;
+        }
+
+        public String getUserEmail() {
+            return userEmail;
+        }
+
+        public boolean isExpired() {
+            return LocalDateTime.now().isAfter(expiryDate);
+        }
+    }
+}

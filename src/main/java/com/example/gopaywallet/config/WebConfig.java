@@ -1,4 +1,3 @@
-/*
 package com.example.gopaywallet.config;
 
 import org.springframework.context.annotation.Configuration;
@@ -14,4 +13,4 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*");
     }
-}*/
+}

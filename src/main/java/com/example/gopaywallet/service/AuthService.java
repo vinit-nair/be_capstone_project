@@ -2,11 +2,13 @@ package com.example.gopaywallet.service;
 
 
 import com.example.gopaywallet.exception.AuthenticationException;
+import com.example.gopaywallet.exception.ResourceNotFoundException;
 import com.example.gopaywallet.exception.UserAlreadyExistsException;
 import com.example.gopaywallet.model.*;
 import com.example.gopaywallet.repository.UserRepository;
 import com.example.gopaywallet.security.JwtTokenProvider;
-import lombok.RequiredArgsConstructor;
+import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -15,7 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
-@RequiredArgsConstructor
+@Transactional
 public class AuthService {
     private final UserRepository userRepository;
     private final AuthenticationManager authenticationManager;
@@ -23,6 +25,34 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
     private final PasswordResetService passwordResetService;
+    private final OtpService otpService;
+
+    @Autowired
+    public AuthService(
+            UserRepository userRepository,
+            AuthenticationManager authenticationManager,
+            JwtTokenProvider jwtTokenProvider,
+            PasswordEncoder passwordEncoder,
+            EmailService emailService,
+            PasswordResetService passwordResetService,
+            OtpService otpService
+    ) {
+        this.userRepository = userRepository;
+        this.authenticationManager = authenticationManager;
+        this.jwtTokenProvider = jwtTokenProvider;
+        this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
+        this.passwordResetService = passwordResetService;
+        this.otpService = otpService;
+    }
+
+    public void initiatePasswordReset(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("EMAIL_NOT_FOUND"));
+
+        String otp = otpService.generateOtp(email);
+        emailService.sendOtp(email, otp);
+    }
 
     public LoginResponse login(LoginRequest request) {
         try {

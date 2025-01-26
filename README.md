@@ -5,19 +5,19 @@ A Spring Boot backend service that provides REST APIs for the GoPay Wallet Andro
 ## Features
 
 - User Authentication & Authorization
-  - JWT-based authentication
-  - Role-based access control
+    - JWT-based authentication
+    - Role-based access control
 - Transaction Management
-  - Send money
-  - Request money
-  - Transaction history
+    - Send money
+    - Request money
+    - Transaction history
 - Account Management
-  - Balance tracking
-  - User profile management
+    - Balance tracking
+    - User profile management
 - Security
-  - Password encryption
-  - Token-based authentication
-  - Request validation
+    - Password encryption
+    - Token-based authentication
+    - Request validation
 
 ## Technical Stack
 
@@ -148,10 +148,10 @@ spring.jpa.hibernate.ddl-auto=update
 1. Start the Spring Boot application
 2. Open browser and navigate to: http://localhost:8081/h2-console
 3. Enter the following details:
-   - JDBC URL: jdbc:h2:file:./data/demo-db
-   - Username: sa
-   - Password: admin
-   - Driver Class: org.h2.Driver
+    - JDBC URL: jdbc:h2:file:./data/demo-db
+    - Username: sa
+    - Password: admin
+    - Driver Class: org.h2.Driver
 
 ### Database Management
 
@@ -366,55 +366,6 @@ Response: 200 OK
 }
 ```
 
-## Setup Instructions
-
-1. Prerequisites:
-   - JDK 17
-   - Maven 3.8.x
-   - MySQL 8.0
-
-2. Clone the repository:
-```bash
-git clone https://github.com/vinit-nair/be_capstone_project.git
-cd be_capstone_project
-```
-
-3. Configure MySQL:
-```sql
-CREATE DATABASE gopay_db;
-CREATE USER 'gopay_user'@'localhost' IDENTIFIED BY 'your_password';
-GRANT ALL PRIVILEGES ON gopay_db.* TO 'gopay_user'@'localhost';
-FLUSH PRIVILEGES;
-```
-
-4. Configure application.properties:
-```properties
-# Database Configuration
-spring.datasource.url=jdbc:mysql://localhost:3306/gopay_db
-spring.datasource.username=gopay_user
-spring.datasource.password=your_password
-
-# JPA Configuration
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.show-sql=true
-
-# Server Configuration
-server.port=8081
-
-# JWT Configuration
-jwt.secret=your_jwt_secret_key
-jwt.expiration=86400000
-
-# Logging
-logging.level.org.springframework.security=DEBUG
-```
-
-5. Build and run:
-```bash
-mvn clean install
-java -jar target/gopay-backend-1.0.0.jar
-```
-
 ## Security Configuration
 
 ```java
@@ -426,25 +377,25 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http) {
         http.csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/test").permitAll()
-                .requestMatchers("/auth/login").permitAll()
-                .requestMatchers("/auth/register").permitAll()
-                .requestMatchers("/auth/forgot-password").permitAll()
-                .requestMatchers("/auth/reset-password").permitAll()
-                .requestMatchers("/api/transactions/**").permitAll()
-                .requestMatchers("/auth/**", "/api/**", "/h2-console/**").permitAll()
-                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                .anyRequest().authenticated()
-            )
-            .headers(headersConfigurer ->
-                headersConfigurer.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
-            )
-            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .cors(cors -> cors.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/test").permitAll()
+                        .requestMatchers("/auth/login").permitAll()
+                        .requestMatchers("/auth/register").permitAll()
+                        .requestMatchers("/auth/forgot-password").permitAll()
+                        .requestMatchers("/auth/reset-password").permitAll()
+                        .requestMatchers("/api/transactions/**").permitAll()
+                        .requestMatchers("/auth/**", "/api/**", "/h2-console/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .anyRequest().authenticated()
+                )
+                .headers(headersConfigurer ->
+                        headersConfigurer.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin)
+                )
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
@@ -493,12 +444,12 @@ springdoc.swagger-ui.operationsSorter=method
 ### Accessing Swagger Documentation
 
 1. API Documentation UI:
-   - URL: http://localhost:8081/swagger-ui.html
-   - Interactive API documentation and testing interface
+    - URL: http://localhost:8081/swagger-ui/index.html
+    - Interactive API documentation and testing interface
 
 2. OpenAPI Specification:
-   - URL: http://localhost:8081/v3/api-docs
-   - Raw OpenAPI specification in JSON format
+    - URL: http://localhost:8081/v3/api-docs
+    - Raw OpenAPI specification in JSON format
 
 ### API Documentation Examples
 
@@ -536,25 +487,38 @@ public class AuthController {
 
 The Swagger UI provides documentation for all available endpoints:
 
-1. Authentication
-   - POST /auth/login
-   - POST /auth/register
-   - POST /auth/forgot-password
-   - POST /auth/reset-password
+### Authentication
+- POST /api/auth/login - User login
+- POST /api/auth/register - User registration
+- POST /api/auth/forgot-password - Request password reset
+- POST /api/auth/verify-otp - Verify OTP for password reset
+- POST /api/auth/reset-password - Reset password with OTP
 
-2. Transactions
-   - GET /api/transactions
-   - POST /api/transactions
-   - GET /api/transactions/{id}
+### Transactions
+- GET /api/transactions - Get all transactions
+- POST /api/transactions - Create new transaction
+- GET /api/transactions/{id} - Get transaction by ID
 
-3. User Management
-   - GET /api/users/profile
-   - PUT /api/users/profile
-   - POST /api/users/change-password
+### User Management
+- GET /api/users/profile - Get user profile
+- PUT /api/users/profile - Update user profile
+- GET /api/users/balance - Get user balance
+
+## Security
+- All endpoints except authentication endpoints require JWT token
+- Token should be included in Authorization header: `Bearer <token>`
+- Token expiration: 24 hours
+
+## Error Handling
+- 400 Bad Request - Invalid input
+- 401 Unauthorized - Invalid/missing token
+- 403 Forbidden - Insufficient permissions
+- 404 Not Found - Resource not found
+- 500 Internal Server Error - Server error
 
 ### Testing APIs via Swagger UI
 
-1. Open Swagger UI at http://localhost:8081/swagger-ui.html
+1. Open Swagger UI at http://localhost:8081/swagger-ui/index.html
 2. Click on any endpoint to expand it
 3. Click "Try it out"
 4. Fill in the required parameters
@@ -592,18 +556,7 @@ sudo service mysql status
 sudo service mysql restart
 ```
 
-2. JWT Token Issues
-```java
-// Implement token refresh mechanism
-@PostMapping("/auth/refresh")
-public ResponseEntity<?> refreshToken(@RequestHeader("Authorization") String token) {
-    // Validate existing token
-    // Generate new token
-    // Return new token
-}
-```
-
-3. CORS Issues
+2. CORS Issues
 ```java
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
@@ -611,7 +564,8 @@ public class WebConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")
                 .allowedOrigins("*")
-                .allowedMethods("GET", "POST", "PUT", "DELETE");
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*");
     }
 }
 ```
@@ -651,4 +605,4 @@ public class CacheConfig {
 
 ## Contact
 
-[Your Contact Information] 
+[Your Contact Information]
