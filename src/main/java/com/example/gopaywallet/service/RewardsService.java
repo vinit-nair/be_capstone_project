@@ -17,8 +17,8 @@ public class RewardsService {
 
     private final TransactionRepository transactionRepository;
     private static final List<String> rewardsList = List.of(
-            "5% on amount received",
-            "10% on amount sent"
+            "5% Reward Points on total amount received",
+            "10% Reward Points on total amount sent"
     );
 
     public RewardsDTO getRewards(Long userId) {
