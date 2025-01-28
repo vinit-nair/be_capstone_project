@@ -1,5 +1,7 @@
 package com.example.gopaywallet.controller;
 
+import com.example.gopaywallet.dto.UserDTO;
+import com.example.gopaywallet.service.UserService;
 import com.example.gopaywallet.exception.*;
 import com.example.gopaywallet.model.*;
 import com.example.gopaywallet.service.AuthService;
@@ -24,6 +26,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public class AuthController {
     private final AuthService authService;
     private final OtpService otpService;
+    private final UserService userService;
 
     @Operation(
             summary = "User registration",
@@ -137,5 +140,24 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new com.example.gopaywallet.model.ApiResponse(false, "Failed to verify OTP"));
         }
+    }
+
+    @Operation(
+            summary = "Get user details",
+            description = "Fetch details of the logged-in user"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User details fetched successfully"),
+            @ApiResponse(responseCode = "403", description = "Unauthorized access"),
+            @ApiResponse(responseCode = "404", description = "User not found")
+    })
+    @GetMapping("/user/{id}")
+    public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
+        return ResponseEntity.ok(userService.getUserById(id));
+    }
+
+    @PutMapping("user/{id}")
+    public ResponseEntity<UserDTO> updateUser(@PathVariable Long id, @RequestBody User updatedUser) {
+        return ResponseEntity.ok(userService.updateUser(id, updatedUser));
     }
 } 

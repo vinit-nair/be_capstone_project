@@ -39,6 +39,8 @@ public class SecurityConfig {
                         .requestMatchers("/auth/register").permitAll()
                         .requestMatchers("/auth/forgot-password").permitAll()
                         .requestMatchers("/auth/reset-password").permitAll()
+                        .requestMatchers("/auth/user/**").permitAll()
+                        .requestMatchers("/auth/user/**").authenticated()
                         .requestMatchers("/api/transactions/**").permitAll()
                         .requestMatchers("/swagger-ui/**").permitAll()
                         .requestMatchers("/v3/api-docs/swagger-config").permitAll()
